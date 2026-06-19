@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv/
+
+# Secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# UI
+ui/node_modules/
+ui/dist/
+ui/build/
+ui/.vite/
+
+# OS / editors
+.DS_Store
+*.log
