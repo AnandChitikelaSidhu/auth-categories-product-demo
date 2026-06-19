@@ -28,6 +28,7 @@ export function AdminUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Last Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
@@ -37,6 +38,7 @@ export function AdminUsersPage() {
                   {data.items.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.full_name}</TableCell>
+                      <TableCell>{user.last_name ?? "—"}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell><Badge variant="secondary">{user.role}</Badge></TableCell>
                       <TableCell>{user.is_active ? "Active" : "Disabled"}</TableCell>

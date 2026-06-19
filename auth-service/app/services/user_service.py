@@ -27,6 +27,7 @@ class UserService:
             email=data.email.lower(),
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
+            last_name=data.last_name,
             role=role,
         )
         self.db.add(user)

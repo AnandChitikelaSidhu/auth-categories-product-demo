@@ -12,7 +12,7 @@ export function RegisterPage() {
   const registerMutation = useRegister();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", full_name: "" },
+    defaultValues: { email: "", password: "", full_name: "", last_name: "" },
   });
 
   return (
@@ -22,12 +22,27 @@ export function RegisterPage() {
         <CardDescription>Register for the Kalo catalog</CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={form.handleSubmit((values) => registerMutation.mutate(values))}>
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit((values) =>
+            registerMutation.mutate({
+              ...values,
+              last_name: values.last_name?.trim() || undefined,
+            })
+          )}
+        >
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name</Label>
             <Input id="full_name" {...form.register("full_name")} />
             {form.formState.errors.full_name ? (
               <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="last_name">Last name</Label>
+            <Input id="last_name" {...form.register("last_name")} />
+            {form.formState.errors.last_name ? (
+              <p className="text-sm text-destructive">{form.formState.errors.last_name.message}</p>
             ) : null}
           </div>
           <div className="space-y-2">
