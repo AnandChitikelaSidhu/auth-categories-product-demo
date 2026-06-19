@@ -10,17 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.redis import get_redis
 from app.core.security import decode_token, is_token_valid
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
 
 security_scheme = HTTPBearer(auto_error=False)
 
-ROLE_HIERARCHY: dict[UserRole, int] = {
-    UserRole.CUSTOMER: 0,
-    UserRole.ADMIN: 1,
-    UserRole.SUPER_ADMIN: 2,
-}
+ADMIN_MINIMUM_LEVEL = 1
+SUPER_ADMIN_MINIMUM_LEVEL = 2
 
 
 async def get_current_user(
@@ -77,16 +74,14 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is disabled",
         )
-    user_permissions = await user_service.get_permissions(user)
-    user.permissions = user_permissions
     return user
 
 
-def require_minimum_role(minimum_role: UserRole):
+def require_minimum_level(minimum_level: int):
     async def role_checker(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> User:
-        if ROLE_HIERARCHY[current_user.role] < ROLE_HIERARCHY[minimum_role]:
+        if current_user.role.level < minimum_level:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",
@@ -96,8 +91,8 @@ def require_minimum_role(minimum_role: UserRole):
     return role_checker
 
 
-RequireAdmin = require_minimum_role(UserRole.ADMIN)
-RequireSuperAdmin = require_minimum_role(UserRole.SUPER_ADMIN)
+RequireAdmin = require_minimum_level(ADMIN_MINIMUM_LEVEL)
+RequireSuperAdmin = require_minimum_level(SUPER_ADMIN_MINIMUM_LEVEL)
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 AdminUser = Annotated[User, Depends(RequireAdmin)]

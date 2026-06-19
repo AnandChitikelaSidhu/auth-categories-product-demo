@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { roleUpdateSchema, type RoleUpdateFormValues } from "@/features/users/api/users-api";
-import { useUpdateUserRole, useUsers } from "@/features/users/hooks/useUsers";
+import { useRoles, useUpdateUserRole, useUsers } from "@/features/users/hooks/useUsers";
 import { usePagination } from "@/shared/hooks/usePagination";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -12,10 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/shared/components/ui/badge";
 import { Pagination } from "@/shared/components/ui/pagination";
 
+function roleLabel(name: string, description: string | null) {
+  return description ?? name.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function AdminRolesPage() {
   const { page, pageSize, setPage, setPageSize } = usePagination();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { data } = useUsers(page, pageSize);
+  const { data: roles, isLoading: rolesLoading } = useRoles();
   const updateRole = useUpdateUserRole();
   const form = useForm<RoleUpdateFormValues>({
     resolver: zodResolver(roleUpdateSchema),
@@ -23,6 +28,7 @@ export function AdminRolesPage() {
   });
 
   const selectedUser = data?.items.find((user) => user.id === selectedUserId);
+  const roleOptions = roles ?? [];
 
   return (
     <div className="space-y-6">
@@ -92,16 +98,22 @@ export function AdminRolesPage() {
             >
               <div className="space-y-2 sm:w-64">
                 <Label>Role</Label>
-                <Select value={form.watch("role")} onValueChange={(value) => form.setValue("role", value as RoleUpdateFormValues["role"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.watch("role")}
+                  onValueChange={(value) => form.setValue("role", value)}
+                  disabled={rolesLoading || roleOptions.length === 0}
+                >
+                  <SelectTrigger><SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select role"} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                    {roleOptions.map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {roleLabel(role.name, role.description)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={updateRole.isPending}>
+              <Button type="submit" disabled={updateRole.isPending || rolesLoading}>
                 {updateRole.isPending ? "Updating..." : "Update role"}
               </Button>
             </form>

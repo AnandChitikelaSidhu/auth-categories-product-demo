@@ -12,6 +12,13 @@ export function useUsers(page: number, pageSize = DEFAULT_PAGE_SIZE) {
   });
 }
 
+export function useRoles() {
+  return useQuery({
+    queryKey: ["roles"],
+    queryFn: () => usersApi.listRoles().then((res) => res.data),
+  });
+}
+
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,18 +1,15 @@
-import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, String, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-
-class UserRole(str, enum.Enum):
-    CUSTOMER = "customer"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
+if TYPE_CHECKING:
+    from app.models.role import Role
 
 
 class User(Base):
@@ -27,15 +24,10 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    role: Mapped[UserRole] = mapped_column(
-        Enum(
-            UserRole,
-            name="user_role",
-            native_enum=True,
-            values_callable=lambda roles: [role.value for role in roles],
-        ),
+    role_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("roles.id"),
         nullable=False,
-        server_default=UserRole.CUSTOMER.value,
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
@@ -55,3 +47,5 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    role: Mapped["Role"] = relationship("Role", lazy="selectin")

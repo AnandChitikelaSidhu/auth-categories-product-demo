@@ -47,7 +47,7 @@ class TokenService:
         access_token = create_access_token(
             subject=user.id,
             email=user.email,
-            role=user.role.value,
+            role=user.role.name,
             jti=access_jti,
         )
         refresh_token = create_refresh_token(subject=user.id, jti=refresh_jti)

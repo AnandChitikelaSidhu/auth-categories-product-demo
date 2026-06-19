@@ -1,5 +1,12 @@
 export type UserRole = "customer" | "admin" | "super_admin";
 
+export interface Role {
+  id: string;
+  name: UserRole;
+  description: string | null;
+  level: number;
+}
+
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -11,6 +18,7 @@ export interface User {
   email: string;
   full_name: string;
   last_name: string | null;
+  role_id: string;
   role: UserRole;
   is_active: boolean;
   is_verified: boolean;

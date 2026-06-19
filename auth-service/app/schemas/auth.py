@@ -5,7 +5,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.password import validate_password_strength
-from app.models.user import UserRole
 
 
 class UserCreate(BaseModel):
@@ -46,16 +45,18 @@ class UserUpdate(BaseModel):
 
 
 class UserRoleUpdate(BaseModel):
-    model_config = ConfigDict(strict=True)
+    model_config = ConfigDict(strict=True, str_strip_whitespace=True)
 
-    role: UserRole
+    role: str = Field(min_length=1, max_length=50)
 
-    @field_validator("role", mode="before")
-    @classmethod
-    def coerce_role(cls, value: str | UserRole) -> UserRole:
-        if isinstance(value, UserRole):
-            return value
-        return UserRole(value)
+
+class RoleResponse(BaseModel):
+    model_config = ConfigDict(strict=True, from_attributes=True)
+
+    id: UUID
+    name: str
+    description: str | None = None
+    level: int
 
 
 class TokenRefresh(BaseModel):
@@ -79,7 +80,8 @@ class UserResponse(BaseModel):
     email: EmailStr
     full_name: str
     last_name: str | None = None
-    role: UserRole
+    role_id: UUID
+    role: str
     is_active: bool
     is_verified: bool
     last_login_at: datetime | None

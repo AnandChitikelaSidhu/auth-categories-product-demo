@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import app.core.database as database
 from app.core.security import decode_token
-from app.models.user import UserRole
 from app.schemas.auth import UserCreate, UserUpdate
 from app.services.rate_limit_service import RateLimitService
 from app.services.token_service import TokenService
@@ -21,7 +20,7 @@ async def test_user_service_create_and_authenticate(db_session: AsyncSession) ->
     await db_session.commit()
 
     assert user.email == "svc@example.com"
-    assert user.role == UserRole.CUSTOMER
+    assert user.role.name == "customer"
 
     authenticated = await service.authenticate("svc@example.com", "Password1")
     assert authenticated is not None
@@ -56,9 +55,9 @@ async def test_user_service_update_role(db_session: AsyncSession) -> None:
     )
     await db_session.commit()
 
-    promoted = await service.update_role(user, UserRole.ADMIN)
+    promoted = await service.update_role(user, "admin")
     await db_session.commit()
-    assert promoted.role == UserRole.ADMIN
+    assert promoted.role.name == "admin"
 
 
 @pytest.mark.asyncio
@@ -114,7 +113,13 @@ async def test_admin_can_list_users_and_super_admin_can_update_role(
 
     async with database.engine.begin() as connection:
         await connection.execute(
-            text("UPDATE users SET role = 'super_admin' WHERE email = :email"),
+            text(
+                """
+                UPDATE users
+                SET role_id = (SELECT id FROM roles WHERE name = 'super_admin')
+                WHERE email = :email
+                """
+            ),
             {"email": user_payload["email"]},
         )
 

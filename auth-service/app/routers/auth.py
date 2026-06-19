@@ -1,7 +1,7 @@
 from math import ceil
 from typing import Annotated
 from uuid import UUID
-from app.schemas.user_response import build_user_response
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -16,6 +16,7 @@ from app.dependencies.auth import (
 from app.schemas.auth import (
     MessageResponse,
     PaginatedUsersResponse,
+    RoleResponse,
     TokenRefresh,
     TokenResponse,
     UserCreate,
@@ -24,11 +25,24 @@ from app.schemas.auth import (
     UserRoleUpdate,
     UserUpdate,
 )
+from app.schemas.user_response import build_user_response
 from app.services.rate_limit_service import RateLimitService
+from app.services.role_service import RoleService
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _user_response(user_service: UserService, user) -> UserResponse:
+    fresh_user = await user_service.get_by_id(user.id)
+    if fresh_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    permissions = await user_service.get_permissions(fresh_user)
+    return build_user_response(fresh_user, permissions=permissions)
 
 
 @router.post(
@@ -45,7 +59,7 @@ async def register(data: UserCreate, db: DbSession) -> UserResponse:
             detail="Email already registered",
         )
     user = await user_service.create_user(data)
-    return UserResponse.model_validate(user)
+    return await _user_response(user_service, user)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -136,12 +150,9 @@ async def logout(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: CurrentUser,db: DbSession) -> UserResponse:
-    #return UserResponse.model_validate(current_user)
+async def get_me(current_user: CurrentUser, db: DbSession) -> UserResponse:
     user_service = UserService(db)
-    user_permissions = await user_service.get_permissions(current_user)
-    return build_user_response(current_user, permissions=user_permissions)
-
+    return await _user_response(user_service, current_user)
 
 
 @router.patch("/me", response_model=UserResponse)
@@ -152,7 +163,17 @@ async def update_me(
 ) -> UserResponse:
     user_service = UserService(db)
     user = await user_service.update_full_name(current_user, data)
-    return UserResponse.model_validate(user)
+    return await _user_response(user_service, user)
+
+
+@router.get("/roles", response_model=list[RoleResponse])
+async def list_roles(
+    _: SuperAdminUser,
+    db: DbSession,
+) -> list[RoleResponse]:
+    role_service = RoleService(db)
+    roles = await role_service.list_roles()
+    return [RoleResponse.model_validate(role) for role in roles]
 
 
 @router.get("/users", response_model=PaginatedUsersResponse)
@@ -164,8 +185,9 @@ async def list_users(
 ) -> PaginatedUsersResponse:
     user_service = UserService(db)
     users, total = await user_service.list_users(page=page, page_size=page_size)
+    items = [await _user_response(user_service, user) for user in users]
     return PaginatedUsersResponse(
-        items=[UserResponse.model_validate(user) for user in users],
+        items=items,
         total=total,
         page=page,
         page_size=page_size,
@@ -181,11 +203,21 @@ async def update_user_role(
     db: DbSession,
 ) -> UserResponse:
     user_service = UserService(db)
+    role_service = RoleService(db)
+
     user = await user_service.get_by_id(user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+
+    role = await role_service.get_by_name(data.role)
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role",
+        )
+
     updated_user = await user_service.update_role(user, data.role)
-    return UserResponse.model_validate(updated_user)
+    return await _user_response(user_service, updated_user)
