@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
+from app.models.role import Permission, Role, role_permissions
 from app.models.user import User, UserRole
 from app.schemas.auth import UserCreate, UserUpdate
 
@@ -21,6 +22,16 @@ class UserService:
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self.db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
+
+    async def get_permissions(self, user: User) -> list[str]:
+        result = await self.db.execute(
+            select(Permission.code)
+            .join(role_permissions, role_permissions.c.permission_id == Permission.id)
+            .join(Role, Role.id == role_permissions.c.role_id)
+            .where(Role.name == user.role.value)
+            .order_by(Permission.code)
+        )
+        return list(result.scalars().all())
 
     async def create_user(self, data: UserCreate, role: UserRole = UserRole.CUSTOMER) -> User:
         user = User(

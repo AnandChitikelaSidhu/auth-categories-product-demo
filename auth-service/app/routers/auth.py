@@ -1,7 +1,7 @@
 from math import ceil
 from typing import Annotated
 from uuid import UUID
-
+from app.schemas.user_response import build_user_response
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -136,8 +136,12 @@ async def logout(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: CurrentUser) -> UserResponse:
-    return UserResponse.model_validate(current_user)
+async def get_me(current_user: CurrentUser,db: DbSession) -> UserResponse:
+    #return UserResponse.model_validate(current_user)
+    user_service = UserService(db)
+    user_permissions = await user_service.get_permissions(current_user)
+    return build_user_response(current_user, permissions=user_permissions)
+
 
 
 @router.patch("/me", response_model=UserResponse)

@@ -77,6 +77,8 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is disabled",
         )
+    user_permissions = await user_service.get_permissions(user)
+    user.permissions = user_permissions
     return user
 
 

@@ -83,6 +83,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_verified: bool
     last_login_at: datetime | None
+    permissions: list[str] = []
     created_at: datetime
     updated_at: datetime
 

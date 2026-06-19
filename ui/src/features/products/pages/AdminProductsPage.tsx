@@ -12,6 +12,7 @@ import {
 import { ProductForm } from "@/features/products/components/ProductForm";
 import { stockDeltaSchema, type StockDeltaFormValues } from "@/features/products/schemas/product-schemas";
 import type { Product } from "@/features/products/types/product.types";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { usePagination } from "@/shared/hooks/usePagination";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -28,6 +29,9 @@ import { formatCurrency } from "@/shared/lib/utils";
 
 export function AdminProductsPage() {
   const { page, pageSize, setPage, setPageSize } = usePagination();
+  const permissions = useAuthStore((state) => state.user?.permissions ?? []);
+  console.log("permissions", permissions);
+  const canShowNewProductButton = permissions.includes("show_new_product");
   const [createOpen, setCreateOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
@@ -51,10 +55,12 @@ export function AdminProductsPage() {
           <h1 className="text-3xl font-bold">Manage Products</h1>
           <p className="text-muted-foreground">Create, edit, update stock, and soft delete products</p>
         </div>
+        {canShowNewProductButton ? (
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" />
           New product
         </Button>
+        ) : null}
       </div>
 
       <Card>
