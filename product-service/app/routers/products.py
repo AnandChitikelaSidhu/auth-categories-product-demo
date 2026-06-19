@@ -36,6 +36,32 @@ async def _invalidate_cache(redis: RedisClient, product_id: UUID) -> None:
     await ProductCacheService(redis).invalidate(str(product_id))
 
 
+def _parse_product_id(identifier: str) -> UUID | None:
+    try:
+        return UUID(identifier)
+    except ValueError:
+        return None
+
+
+def _inactive_product_hidden(product_is_active: bool, user: OptionalUser) -> bool:
+    return not product_is_active and (user is None or not is_admin_role(user.role))
+
+
+async def _get_cached_product(
+    cache: ProductCacheService,
+    product_id: UUID,
+    user: OptionalUser,
+    response: Response,
+) -> ProductResponse | None:
+    cached = await cache.get_product(str(product_id))
+    if cached is None:
+        return None
+    if _inactive_product_hidden(cached.is_active, user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    response.headers[CACHE_HEADER] = "HIT"
+    return cached
+
+
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     db: DbSession,
@@ -75,16 +101,18 @@ async def get_product(
     response: Response,
     user: OptionalUser,
 ) -> ProductResponse:
+    cache = ProductCacheService(redis)
+    product_id = _parse_product_id(identifier)
+
+    if product_id is not None:
+        cached = await _get_cached_product(cache, product_id, user, response)
+        if cached is not None:
+            return cached
+
     service = ProductService(db)
     product = await _get_product(service, identifier)
-    if not product.is_active and (user is None or not is_admin_role(user.role)):
+    if _inactive_product_hidden(product.is_active, user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    cache = ProductCacheService(redis)
-    cached = await cache.get_product(str(product.id))
-    if cached is not None:
-        response.headers[CACHE_HEADER] = "HIT"
-        return cached
 
     payload = service.to_response(product)
     await cache.set_product(payload)

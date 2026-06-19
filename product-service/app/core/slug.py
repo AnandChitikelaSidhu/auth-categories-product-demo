@@ -11,7 +11,7 @@ def slugify_name(name: str) -> str:
 
 async def build_unique_slug(base_slug: str, exists) -> str:
     candidate = base_slug
-    suffix = 2
+    suffix = 1
     while await exists(candidate):
         candidate = f"{base_slug}-{suffix}"
         suffix += 1
