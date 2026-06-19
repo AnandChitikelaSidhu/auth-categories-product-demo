@@ -185,3 +185,4 @@ cd product-service && source .venv/bin/activate && pytest --cov=app/routers --co
 - **Dockerization** — containerize auth-service, product-service, UI, Postgres, and Redis for one-command local setup.
 - **Validating the test cases** — review and run the full test suite across services to confirm coverage and behavior.
 - **Swagger comments** — add richer OpenAPI descriptions to `/docs` (endpoint summaries, parameter docs, and response details).
+- **UI validations and review** — To Review UI validation and changes
