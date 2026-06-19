@@ -22,6 +22,7 @@ ui/node_modules/
 ui/dist/
 ui/build/
 ui/.vite/
+ui/package-lock.json
 
 # OS / editors
 .DS_Store

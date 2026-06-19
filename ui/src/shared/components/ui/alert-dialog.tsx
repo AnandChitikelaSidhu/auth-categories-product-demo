@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { X } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/components/ui/button-variants";
 
@@ -11,7 +12,11 @@ export function AlertDialogOverlay({ className, ...props }: React.ComponentProps
   return <AlertDialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />;
 }
 
-export function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+export function AlertDialogContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -21,13 +26,28 @@ export function AlertDialogContent({ className, ...props }: React.ComponentProps
           className,
         )}
         {...props}
-      />
+      >
+        {children}
+        <AlertDialogPrimitive.Cancel
+          className={cn(
+            "absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent",
+            "text-foreground opacity-70 ring-offset-background transition-opacity",
+            "hover:bg-accent hover:opacity-100",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "disabled:pointer-events-none",
+          )}
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </AlertDialogPrimitive.Cancel>
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   );
 }
 
 export function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />;
+  return <div className={cn("flex flex-col space-y-2 pr-8 text-center sm:text-left", className)} {...props} />;
 }
 
 export function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {

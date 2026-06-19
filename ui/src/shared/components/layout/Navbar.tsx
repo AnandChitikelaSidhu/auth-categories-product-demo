@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { LogOut, Menu, Moon, Sun, UserCircle } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useTheme } from "@/shared/components/ThemeProvider";
+import { ProfileDialog } from "@/features/auth/components/ProfileDialog";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useLogout } from "@/features/auth/hooks/useAuth";
 
@@ -10,6 +12,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ onMenuClick }: NavbarProps) {
+  const [profileOpen, setProfileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const user = useAuthStore((state) => state.user);
   const logout = useLogout();
@@ -32,12 +35,11 @@ export function Navbar({ onMenuClick }: NavbarProps) {
 
         {user ? (
           <>
-            <Button variant="ghost" asChild>
-              <Link to="/profile" className="gap-2">
-                <UserCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">{user.full_name}</span>
-              </Link>
+            <Button variant="ghost" className="gap-2" onClick={() => setProfileOpen(true)}>
+              <UserCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">{user.full_name}</span>
             </Button>
+            <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
             <Button variant="outline" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogOut className="h-4 w-4" />
               Logout
